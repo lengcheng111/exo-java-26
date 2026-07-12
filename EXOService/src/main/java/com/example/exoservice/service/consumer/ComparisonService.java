@@ -1,6 +1,6 @@
-package com.example.exoconsumerservice.service;
+package com.example.exoservice.service.consumer;
 
-import com.example.exoconsumerservice.dto.Inconsistency;
+import com.example.exoservice.dto.Inconsistency;
 
 import java.util.List;
 

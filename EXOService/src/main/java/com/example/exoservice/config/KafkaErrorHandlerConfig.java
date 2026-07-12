@@ -1,5 +1,6 @@
-package com.example.exoconsumerservice.config;
+package com.example.exoservice.config;
 
+import com.example.exoservice.helper.KeyUtil;
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -11,9 +12,6 @@ import org.springframework.util.backoff.FixedBackOff;
 
 @Configuration
 public class KafkaErrorHandlerConfig {
-
-    public static final String SUFFIX_DLT_TOPIC = ".DLT";
-
     @Bean
     public DefaultErrorHandler kafkaErrorHandler(
             KafkaTemplate<String, Object> kafkaTemplate,
@@ -27,7 +25,7 @@ public class KafkaErrorHandlerConfig {
                         kafkaTemplate,
                         (record, exception) ->
                                 new TopicPartition(
-                                        record.topic() + SUFFIX_DLT_TOPIC,
+                                        record.topic() + KeyUtil.SUFFIX_DLT_TOPIC,
                                         record.partition()
                                 )
                 );

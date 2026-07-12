@@ -6,7 +6,14 @@
       <list>
         <option value="$PROJECT_DIR$/EXOService/pom.xml" />
         <option value="$PROJECT_DIR$/EXOConsumerService/pom.xml" />
+        <option value="$PROJECT_DIR$/Exo2026Service/pom.xml" />
       </list>
+    </option>
+    <option name="ignoredFiles">
+      <set>
+        <option value="$PROJECT_DIR$/EXOConsumerService/pom.xml" />
+        <option value="$PROJECT_DIR$/Exo2026Service/pom.xml" />
+      </set>
     </option>
   </component>
   <component name="NullableNotNullManager">

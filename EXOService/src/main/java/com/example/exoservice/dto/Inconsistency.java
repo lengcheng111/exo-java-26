@@ -1,4 +1,4 @@
-package com.example.exoconsumerservice.dto;
+package com.example.exoservice.dto;
 
 public record Inconsistency(
         String folderId,

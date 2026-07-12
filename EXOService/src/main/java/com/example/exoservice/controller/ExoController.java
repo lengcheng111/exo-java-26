@@ -1,12 +1,17 @@
 package com.example.exoservice.controller;
 
-import com.example.exoservice.service.AggregatorService;
 import com.example.exoservice.dto.JobState;
+import com.example.exoservice.service.AggregatorService;
 import com.example.exoservice.service.InconsistencyService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 
 @RestController
 public class ExoController {
@@ -19,20 +24,33 @@ public class ExoController {
         this.aggregatorService = aggregatorService;
     }
 
+//    @PostMapping("/inconsistencies")
+//    Result getInConsistencies() {
+//        String jobId = producerService.getInconsistency();
+//        return new Result(jobId, "RUNNING");
+//    }
+
+//    @GetMapping("/inconsistencies/{jobId}")
+//    public ResponseEntity<JobState> getJob(@PathVariable String jobId) {
+//        JobState job = aggregatorService.get(jobId);
+//
+//        return job == null
+//                ? ResponseEntity.notFound().build()
+//                : ResponseEntity.ok(job);
+//    }
+
     @GetMapping("/inconsistencies")
-    Test getInConsistencies() {
-        String jobId = producerService.getInconsistency();
-        return new Test(jobId, "RUNNING");
+    public Mono<ResponseEntity<JobState>> getInconsistencies() {
+        return producerService.getInconsistency()
+                .flatMap(jobId ->
+                        Flux.interval(Duration.ofSeconds(1))
+                                .concatMap(i -> aggregatorService.get(jobId))
+                                .next())
+                .map(ResponseEntity::ok)
+                .timeout(Duration.ofMinutes(2))
+                .onErrorReturn(
+                        TimeoutException.class,
+                        ResponseEntity.status(HttpStatus.REQUEST_TIMEOUT).build()
+                );
     }
-
-    @GetMapping("/inconsistencies/{jobId}")
-    public ResponseEntity<JobState> getJob(@PathVariable String jobId) {
-        JobState job = aggregatorService.get(jobId);
-
-        return job == null
-                ? ResponseEntity.notFound().build()
-                : ResponseEntity.ok(job);
-    }
-
-    record Test(String id, String email){}
 }

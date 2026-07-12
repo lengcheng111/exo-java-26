@@ -3,6 +3,8 @@ package com.example.exoservice.service;
 import com.example.exoservice.config.UserApiClient;
 import com.example.exoservice.dto.UserMessage;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.UUID;
@@ -20,24 +22,29 @@ public class InconsistencyImpl implements InconsistencyService {
     }
 
     @Override
-    public String getInconsistency() {
+    public Mono<String> getInconsistency() {
+        return Mono.fromCallable(apiClient::getEmails)
+                .flatMap(emails -> {
+                    if (emails.isEmpty()) {
+                        return Mono.empty();
+                    }
 
-        List<String> emails = apiClient.getEmails();
+                    List<String> distinctEmails = emails.stream()
+                            .distinct()
+                            .toList();
 
-        if (emails == null || emails.isEmpty()) {
-            return null;
-        }
+                    String jobId = UUID.randomUUID().toString();
 
-        String jobId = UUID.randomUUID().toString();
-
-        emails = emails.stream().distinct().toList();
-
-        aggregatorService.createJob(jobId, emails.size());
-
-        for (String email : emails) {
-            producer.publish(new UserMessage(jobId, email));
-        }
-
-        return jobId;
+                    return aggregatorService.createJob(jobId, distinctEmails.size())
+                            .thenMany(
+                                    Flux.fromIterable(distinctEmails)
+                                            .flatMap(email ->
+                                                    Mono.fromRunnable(() ->
+                                                            producer.publish(new UserMessage(jobId, email))
+                                                    )
+                                            )
+                            )
+                            .then(Mono.just(jobId));
+                });
     }
 }

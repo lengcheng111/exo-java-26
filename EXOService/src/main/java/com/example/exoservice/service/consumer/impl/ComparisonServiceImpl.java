@@ -1,10 +1,10 @@
-package com.example.exoconsumerservice.service.impl;
+package com.example.exoservice.service.consumer.impl;
 
-import com.example.exoconsumerservice.config.UserApiClient;
-import com.example.exoconsumerservice.dto.FolderResponse;
-import com.example.exoconsumerservice.dto.Inconsistency;
-import com.example.exoconsumerservice.dto.UserFolderResponse;
-import com.example.exoconsumerservice.service.ComparisonService;
+import com.example.exoservice.config.UserApiClient;
+import com.example.exoservice.dto.FolderResponse;
+import com.example.exoservice.dto.Inconsistency;
+import com.example.exoservice.dto.UserFolderResponse;
+import com.example.exoservice.service.consumer.ComparisonService;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedList;

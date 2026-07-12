@@ -1,16 +1,17 @@
-package com.example.exoconsumerservice.service.impl;
+package com.example.exoservice.service.consumer.impl;
 
-import com.example.exoconsumerservice.dto.Inconsistency;
-import com.example.exoconsumerservice.dto.ResultMessage;
-import com.example.exoconsumerservice.dto.ResultMessageStatus;
-import com.example.exoconsumerservice.dto.UserMessage;
-import com.example.exoconsumerservice.service.JobResultAggregatorService;
-import com.example.exoconsumerservice.service.ComparisonService;
-import com.example.exoconsumerservice.service.WorkerService;
+import com.example.exoservice.dto.Inconsistency;
+import com.example.exoservice.dto.ResultMessage;
+import com.example.exoservice.dto.ResultMessageStatus;
+import com.example.exoservice.dto.UserMessage;
+import com.example.exoservice.service.consumer.ComparisonService;
+import com.example.exoservice.service.consumer.JobResultAggregatorService;
+import com.example.exoservice.service.consumer.WorkerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 
 @Service
@@ -50,14 +51,16 @@ public class WorkerServiceImpl implements WorkerService {
                     .map(Inconsistency::message)
                     .toList();
 
-            jobResultAggregatorService.recordResult(
-                    new ResultMessage(
+            jobResultAggregatorService.addResult(new ResultMessage(
                             request.getJobId(),
                             request.getEmail(),
                             ResultMessageStatus.SUCCESS,
                             messages
-                    )
-            );
+                    ))
+                    .doOnSuccess(v -> log.info("Recorded result for {}", request.getJobId()))
+                    .doOnError(ex -> log.error("Failed to record result", ex))
+                    .subscribe();
+
         } catch (Exception e) {
             log.error(
                     "Failed to process jobId={}, email={}",
