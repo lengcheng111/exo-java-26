@@ -10,9 +10,9 @@ import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.util.backoff.FixedBackOff;
 
 @Configuration
-public class KafkaConsumerConfig {
+public class KafkaErrorHandlerConfig {
 
-    public static final String SUBFIX_DLT_TOPIC = ".DLT";
+    public static final String SUFFIX_DLT_TOPIC = ".DLT";
 
     @Bean
     public DefaultErrorHandler kafkaErrorHandler(
@@ -27,7 +27,7 @@ public class KafkaConsumerConfig {
                         kafkaTemplate,
                         (record, exception) ->
                                 new TopicPartition(
-                                        record.topic() + SUBFIX_DLT_TOPIC,
+                                        record.topic() + SUFFIX_DLT_TOPIC,
                                         record.partition()
                                 )
                 );

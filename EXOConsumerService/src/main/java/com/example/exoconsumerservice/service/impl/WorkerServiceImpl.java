@@ -4,9 +4,9 @@ import com.example.exoconsumerservice.dto.Inconsistency;
 import com.example.exoconsumerservice.dto.ResultMessage;
 import com.example.exoconsumerservice.dto.ResultMessageStatus;
 import com.example.exoconsumerservice.dto.UserMessage;
-import com.example.exoconsumerservice.service.AggregatorService;
-import com.example.exoconsumerservice.service.FolderService;
-import com.example.exoconsumerservice.service.FolderWorkerService;
+import com.example.exoconsumerservice.service.JobResultAggregatorService;
+import com.example.exoconsumerservice.service.ComparisonService;
+import com.example.exoconsumerservice.service.WorkerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -14,20 +14,20 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class FolderWorkerServiceImpl implements FolderWorkerService {
+public class WorkerServiceImpl implements WorkerService {
 
     private static final Logger log =
-            LoggerFactory.getLogger(FolderWorkerServiceImpl.class);
+            LoggerFactory.getLogger(WorkerServiceImpl.class);
 
-    private final FolderService folderService;
-    private final AggregatorService aggregatorService;
+    private final ComparisonService comparisonService;
+    private final JobResultAggregatorService jobResultAggregatorService;
 
-    public FolderWorkerServiceImpl(
-            FolderService folderService,
-            AggregatorService aggregatorService) {
+    public WorkerServiceImpl(
+            ComparisonService comparisonService,
+            JobResultAggregatorService jobResultAggregatorService) {
 
-        this.folderService = folderService;
-        this.aggregatorService = aggregatorService;
+        this.comparisonService = comparisonService;
+        this.jobResultAggregatorService = jobResultAggregatorService;
     }
 
     @Override
@@ -45,12 +45,12 @@ public class FolderWorkerServiceImpl implements FolderWorkerService {
         }
 
         try {
-            List<String> messages = folderService.compare(request.getEmail())
+            List<String> messages = comparisonService.compare(request.getEmail())
                     .stream()
                     .map(Inconsistency::message)
                     .toList();
 
-            aggregatorService.add(
+            jobResultAggregatorService.recordResult(
                     new ResultMessage(
                             request.getJobId(),
                             request.getEmail(),
@@ -66,6 +66,7 @@ public class FolderWorkerServiceImpl implements FolderWorkerService {
                     e
             );
 
+            // should throw e: do not commit to kafka -> will retry
             throw e;
         }
     }

@@ -4,7 +4,7 @@ import com.example.exoconsumerservice.config.UserApiClient;
 import com.example.exoconsumerservice.dto.FolderResponse;
 import com.example.exoconsumerservice.dto.Inconsistency;
 import com.example.exoconsumerservice.dto.UserFolderResponse;
-import com.example.exoconsumerservice.service.FolderService;
+import com.example.exoconsumerservice.service.ComparisonService;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedList;
@@ -14,11 +14,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
-public class FolderServiceImpl implements FolderService {
+public class ComparisonServiceImpl implements ComparisonService {
 
     private final UserApiClient apiClient;
 
-    public FolderServiceImpl(UserApiClient apiClient) {
+    public ComparisonServiceImpl(UserApiClient apiClient) {
         this.apiClient = apiClient;
     }
 
