@@ -58,10 +58,10 @@ EXOService
 * Docker Compose
 * NGINX mock API
 
-![Flow.drawio.png](Flow.drawio.png)
+![Flow.drawio.png](../Flow.drawio.png)
 
 ### Consumer flow
-![ConsumerFlow.png](ConsumerFlow.png)
+![ConsumerFlow.png](../ConsumerFlow.png)
 
 ## Run
 
@@ -106,7 +106,7 @@ curl http://localhost:8085/inconsistencies
 ```
 
 ## Result
-![Result.png](Result.png)
+![Result.png](../Result.png)
 
 
 ## Discussion
