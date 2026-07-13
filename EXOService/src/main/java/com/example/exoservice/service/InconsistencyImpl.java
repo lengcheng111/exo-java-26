@@ -2,6 +2,7 @@ package com.example.exoservice.service;
 
 import com.example.exoservice.config.UserApiClient;
 import com.example.exoservice.dto.UserMessage;
+import com.example.exoservice.service.producer.UserProducer;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -23,25 +24,27 @@ public class InconsistencyImpl implements InconsistencyService {
 
     @Override
     public Mono<String> getInconsistency() {
-        return Mono.fromCallable(apiClient::getEmails)
-                .flatMap(emails -> {
-                    if (emails.isEmpty()) {
+        return apiClient.getEmails()
+                .map(emails -> emails.stream()
+                        .distinct()
+                        .toList()
+                )
+                .flatMap(distinctEmails -> {
+                    if (distinctEmails.isEmpty()) {
                         return Mono.empty();
                     }
 
-                    List<String> distinctEmails = emails.stream()
-                            .distinct()
-                            .toList();
-
                     String jobId = UUID.randomUUID().toString();
 
-                    return aggregatorService.createJob(jobId, distinctEmails.size())
+                    return aggregatorService
+                            .createJob(jobId, distinctEmails.size())
                             .thenMany(
                                     Flux.fromIterable(distinctEmails)
-                                            .flatMap(email ->
-                                                    Mono.fromRunnable(() ->
+                                            .flatMap(
+                                                    email -> Mono.fromRunnable(() ->
                                                             producer.publish(new UserMessage(jobId, email))
-                                                    )
+                                                    ),
+                                                    10
                                             )
                             )
                             .then(Mono.just(jobId));

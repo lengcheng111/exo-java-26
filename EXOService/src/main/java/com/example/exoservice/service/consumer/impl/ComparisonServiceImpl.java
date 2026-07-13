@@ -6,6 +6,7 @@ import com.example.exoservice.dto.Inconsistency;
 import com.example.exoservice.dto.UserFolderResponse;
 import com.example.exoservice.service.consumer.ComparisonService;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -23,26 +24,42 @@ public class ComparisonServiceImpl implements ComparisonService {
     }
 
     @Override
-    public List<Inconsistency> compare(String email) {
-        List<UserFolderResponse> userFolders = apiClient.getUserFolders(email);
+    public Mono<List<Inconsistency>> compare(String email) {
+        Mono<List<UserFolderResponse>> userFoldersMono =
+                apiClient.getUserFolders(email);
 
-        // TODO: if this api does not change, we should cache this response of this API
-        List<FolderResponse> globalFolders = apiClient.getFolders()
-                .stream()
-                .filter(folder -> email.equalsIgnoreCase(folder.user()))
-                .toList();
+        Mono<List<FolderResponse>> globalFoldersMono =
+                apiClient.getFolders()
+                        .map(folders -> folders.stream()
+                                .filter(folder ->
+                                        email.equalsIgnoreCase(folder.user()))
+                                .toList()
+                        );
 
-        Map<String, UserFolderResponse> userFolderMap = userFolders.stream()
-                .collect(Collectors.toMap(
-                        UserFolderResponse::id,
-                        Function.identity()
+        return Mono.zip(userFoldersMono, globalFoldersMono)
+                .map(tuple -> compareFolders(
+                        tuple.getT1(),
+                        tuple.getT2()
                 ));
+    }
 
-        Map<String, FolderResponse> globalFolderMap = globalFolders.stream()
-                .collect(Collectors.toMap(
-                        FolderResponse::id,
-                        Function.identity()
-                ));
+    private List<Inconsistency> compareFolders(
+            List<UserFolderResponse> userFolders,
+            List<FolderResponse> globalFolders
+    ) {
+        Map<String, UserFolderResponse> userFolderMap =
+                userFolders.stream()
+                        .collect(Collectors.toMap(
+                                UserFolderResponse::id,
+                                Function.identity()
+                        ));
+
+        Map<String, FolderResponse> globalFolderMap =
+                globalFolders.stream()
+                        .collect(Collectors.toMap(
+                                FolderResponse::id,
+                                Function.identity()
+                        ));
 
         List<Inconsistency> results = new LinkedList<>();
 

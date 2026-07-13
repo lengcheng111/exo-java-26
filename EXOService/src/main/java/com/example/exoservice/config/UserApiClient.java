@@ -12,6 +12,7 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 import reactor.util.retry.Retry;
 
@@ -71,18 +72,18 @@ public class UserApiClient {
                 );
     }
 
-    public List<String> getEmails() {
-        String[] emails = webClient
-                .get()
+    public Mono<List<String>> getEmails() {
+        return webClient.get()
                 .uri("/users")
                 .retrieve()
                 .bodyToMono(String[].class)
-                .block();
-
-        return emails != null ? Arrays.asList(emails) : List.of();
+                .map(Arrays::asList)
+                .defaultIfEmpty(List.of())
+                .timeout(requestTimeout)
+                .retryWhen(retry);
     }
 
-    public List<UserFolderResponse> getUserFolders(String email) {
+    public Mono<List<UserFolderResponse>> getUserFolders(String email) {
         return webClient.get()
                 .uri("/users/{email}/folders", email)
                 .retrieve()
@@ -93,11 +94,11 @@ public class UserApiClient {
                 .bodyToFlux(UserFolderResponse.class)
                 .collectList()
                 .timeout(requestTimeout)
-                .retryWhen(retry)
-                .block();
+                .retryWhen(retry);
     }
 
-    public List<FolderResponse> getFolders() {
+
+    public Mono<List<FolderResponse>> getFolders() {
         return webClient.get()
                 .uri("/folders")
                 .retrieve()
@@ -108,8 +109,7 @@ public class UserApiClient {
                 .bodyToFlux(FolderResponse.class)
                 .collectList()
                 .timeout(requestTimeout)
-                .retryWhen(retry)
-                .block();
+                .retryWhen(retry);
     }
 
     private boolean isRetryable(Throwable throwable) {

@@ -1,4 +1,4 @@
-package com.example.exoservice.service;
+package com.example.exoservice.service.producer;
 
 import com.example.exoservice.dto.UserMessage;
 import org.springframework.beans.factory.annotation.Value;

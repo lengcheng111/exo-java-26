@@ -10,9 +10,9 @@ import com.example.exoservice.service.consumer.WorkerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
+import reactor.core.publisher.Mono;
 
 @Service
 public class WorkerServiceImpl implements WorkerService {
@@ -33,44 +33,57 @@ public class WorkerServiceImpl implements WorkerService {
 
     @Override
     @KafkaListener(
-            topics = "${kafka.topic.folder-check-request}",
+            topics = "${topic.user-check}",
             groupId = "${kafka.consumer.group-id}",
             concurrency = "${kafka.consumer.concurrency}"
     )
-    public void consume(UserMessage request) {
+    public void consume(
+            UserMessage request,
+            Acknowledgment acknowledgment
+    ) {
+        process(request)
+                .doOnSuccess(ignored -> {
+                    acknowledgment.acknowledge();
 
-        if (request == null
-                || request.getJobId() == null
-                || request.getEmail() == null) {
-            throw new IllegalArgumentException("Invalid request");
-        }
-
-        try {
-            List<String> messages = comparisonService.compare(request.getEmail())
-                    .stream()
-                    .map(Inconsistency::message)
-                    .toList();
-
-            jobResultAggregatorService.addResult(new ResultMessage(
+                    log.info(
+                            "Processed and committed jobId={}, email={}",
                             request.getJobId(),
-                            request.getEmail(),
-                            ResultMessageStatus.SUCCESS,
-                            messages
-                    ))
-                    .doOnSuccess(v -> log.info("Recorded result for {}", request.getJobId()))
-                    .doOnError(ex -> log.error("Failed to record result", ex))
-                    .subscribe();
+                            request.getEmail()
+                    );
+                })
+                .doOnError(ex -> log.error(
+                        "Failed to process jobId={}, email={}. Offset will not be committed",
+                        request != null ? request.getJobId() : null,
+                        request != null ? request.getEmail() : null,
+                        ex
+                ))
+                .block();
+    }
 
-        } catch (Exception e) {
-            log.error(
-                    "Failed to process jobId={}, email={}",
-                    request.getJobId(),
-                    request.getEmail(),
-                    e
-            );
+    private Mono<Void> process(UserMessage request) {
+        return Mono.defer(() -> {
+            if (request == null
+                    || request.getJobId() == null
+                    || request.getEmail() == null) {
+                return Mono.error(new IllegalArgumentException("Invalid request"));
+            }
 
-            // should throw e: do not commit to kafka -> will retry
-            throw e;
-        }
+            return comparisonService.compare(request.getEmail())
+                    .map(inconsistencies -> inconsistencies.stream()
+                            .map(Inconsistency::getMessage)
+                            .toList()
+                    )
+                    .flatMap(messages ->
+                            jobResultAggregatorService.addResult(
+                                    new ResultMessage(
+                                            request.getJobId(),
+                                            request.getEmail(),
+                                            ResultMessageStatus.SUCCESS,
+                                            messages
+                                    )
+                            )
+                    )
+                    .then();
+        });
     }
 }

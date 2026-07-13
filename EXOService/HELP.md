@@ -60,10 +60,33 @@ EXOService
 
 ![Flow.drawio.png](Flow.drawio.png)
 
+### Consumer flow
+![ConsumerFlow.png](ConsumerFlow.png)
+
 ## Run
 
 ```bash
 docker compose up -d
+```
+
+Create topic
+
+```bash
+kafka-topics.sh \
+--bootstrap-server localhost:9092 \
+--create \
+--topic folder-check-request \
+--partitions 5 \
+--replication-factor 1
+```
+
+```bash
+kafka-topics.sh \
+--bootstrap-server localhost:9092 \
+--create \
+--topic folder-check-request-dlt \
+--partitions 5 \
+--replication-factor 1
 ```
 
 Start `EXOService` application
@@ -100,6 +123,10 @@ Currently, every request to `GET /inconsistencies` creates a new `jobId` and sta
 An alternative design is to check whether a previous job is still running. If so, instead of creating a new job, the API could return the existing `jobId` (or its current result) until that job completes. 
 This would avoid duplicate processing when multiple identical requests arrive within a short period.
 
+### 3. Move consumer to other service for scaling
+Currently, for quickly delivery result, the producer and consumer are mixed together, i expected scale Consumer to 3 instances
+
+
 ## Future Improvements
 
 The following improvements would be implemented:
@@ -107,3 +134,4 @@ The following improvements would be implemented:
 * Provide a complete `docker-compose.yml` to start all services (Kafka, Redis, Mock API, EXOService, and EXOConsumerService) with a single command.
 * Add integration tests covering the end-to-end workflow.
 * Add metrics and monitoring (e.g., Prometheus/Grafana) for Kafka consumers and job processing.
+* Turning Kafka producer

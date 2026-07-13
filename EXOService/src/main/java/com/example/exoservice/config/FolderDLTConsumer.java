@@ -25,7 +25,7 @@ public class FolderDLTConsumer {
     }
 
     @KafkaListener(
-            topics = "${kafka.topic.folder-check-request}" + KeyUtil.SUFFIX_DLT_TOPIC,
+            topics = "${topic.user-check}" + KeyUtil.SUFFIX_DLT_TOPIC,
             groupId = "${kafka.consumer.group-id}-dlt"
     )
     public void consume(UserMessage request) {
